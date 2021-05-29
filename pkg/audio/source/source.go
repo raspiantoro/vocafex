@@ -3,11 +3,13 @@ package source
 import (
 	"bytes"
 	"context"
+	"fmt"
 )
 
 type audioInput interface {
 	init() error
 	start() error
+	useDefaultConfig()
 	capture(ctx context.Context) (chunk chan bytes.Buffer)
 }
 
@@ -29,8 +31,10 @@ func NewAudioSource(inputType AudioInputType, opts ...Options) (source *AudioSou
 	}
 
 	if source.input == nil {
-		// use mic as default input
-		input := new(micInput)
+		input, err := getAudioInput(inputType)
+		if err != nil {
+			return nil, err
+		}
 		input.useDefaultConfig()
 		source.input = input
 	}
@@ -38,6 +42,19 @@ func NewAudioSource(inputType AudioInputType, opts ...Options) (source *AudioSou
 	err = source.input.init()
 
 	return
+}
+
+func getAudioInput(inputType AudioInputType) (input audioInput, err error) {
+	switch inputType {
+	case AudioInputTypeMic:
+		return new(micInput), nil
+	case AudioInputTypeWav:
+		fallthrough
+	case AudioInputTypeMp3:
+		fallthrough
+	default:
+		return nil, fmt.Errorf("%s not yet implemented", inputType)
+	}
 }
 
 func (a *AudioSource) Start() error {

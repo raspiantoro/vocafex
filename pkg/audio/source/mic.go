@@ -14,64 +14,71 @@ type MicConfig struct {
 	NumChannel int
 	SampleRate float64
 	FrameSize  int
+	Order      binary.ByteOrder
 	Buffer     interface{}
 }
 
 type micInput struct {
-	numChannel int
-	sampleRate float64
-	frameSize  int
-	buffer     interface{}
-	stream     *portaudio.Stream
+	cfg    MicConfig
+	stream *portaudio.Stream
 }
 
-func (mi *micInput) init() (err error) {
-	mi.stream, err = portaudio.OpenDefaultStream(mi.numChannel, 0, mi.sampleRate, mi.frameSize, mi.buffer)
+func (m *micInput) init() (err error) {
+	m.stream, err = portaudio.OpenDefaultStream(m.cfg.NumChannel, 0, m.cfg.SampleRate, m.cfg.FrameSize, m.cfg.Buffer)
 	return
 }
 
-func (mi *micInput) useDefaultConfig() {
+func (m *micInput) useDefaultConfig() {
 	buffer := make([]int16, 8196)
-	mi.numChannel = 1
-	mi.sampleRate = 16000
-	mi.frameSize = len(buffer)
-	mi.buffer = buffer
+	m.cfg = MicConfig{}
+	m.cfg.NumChannel = 1
+	m.cfg.SampleRate = 16000
+	m.cfg.FrameSize = len(buffer)
+	m.cfg.Order = binary.LittleEndian
+	m.cfg.Buffer = buffer
 }
 
-func (mi *micInput) start() error {
-	return mi.stream.Start()
+func (m *micInput) start() error {
+	return m.stream.Start()
 }
 
-func (mi *micInput) capture(ctx context.Context) (chunk chan bytes.Buffer) {
+func (m *micInput) capture(ctx context.Context) (chunk chan bytes.Buffer) {
 
-loopCapture:
-	for {
-		select {
-		case <-ctx.Done():
-			break loopCapture
-		default:
-			buff, err := mi.readBuffer()
-			if err != nil {
-				log.Println(err)
+	chunk = make(chan bytes.Buffer)
+
+	go func() {
+	loopCapture:
+		for {
+			select {
+			case <-ctx.Done():
+				break loopCapture
+			default:
+				buff, err := m.readBuffer()
+				if err != nil {
+					log.Println(err)
+				}
+				chunk <- buff
 			}
-			chunk <- buff
 		}
-	}
+
+		return
+	}()
 
 	return
 }
 
-func (mi *micInput) readBuffer() (buff bytes.Buffer, err error) {
+func (m *micInput) readBuffer() (buff bytes.Buffer, err error) {
+	buff = bytes.Buffer{}
 	buff.Reset()
 
 	fmt.Println("Read Buffer")
 
-	err = mi.stream.Read()
+	err = m.stream.Read()
 	if err != nil {
 		return
 	}
 
-	err = binary.Write(&buff, binary.LittleEndian, mi.buffer)
+	err = binary.Write(&buff, m.cfg.Order, m.cfg.Buffer)
 
 	return
 }
