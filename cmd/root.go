@@ -16,29 +16,55 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
-	"os"
+	"log"
+
+	"github.com/gordonklaus/portaudio"
+	"github.com/raspiantoro/vocafex/pkg/audio/source"
 	"github.com/spf13/cobra"
-
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/spf13/viper"
+	"github.com/zimmski/osutil"
 )
-
-var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "vocafex",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "audio processing software",
+	Long: `vocafex is an audio processing software.
+with vocafex it will allow you to add soundfx to any sound input in realtime.`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Run: func(cmd *cobra.Command, args []string) {
+
+		_, err := osutil.CaptureWithCGo(initPortaudio)
+		if err != nil {
+			return
+		}
+
+		ctx := context.Background()
+
+		buffer := make([]int16, 8196)
+		micConfig := source.MicConfig{
+			NumChannel: 1,
+			SampleRate: 16000,
+			FrameSize:  len(buffer),
+			Buffer:     buffer,
+		}
+
+		audioSource, err := source.NewAudioSource(source.AudioInputTypeMic, source.WithMicConfig(micConfig))
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if err = audioSource.Start(); err != nil {
+			log.Fatal(err)
+		}
+
+		for c := range audioSource.Capture(ctx) {
+			fmt.Printf("Buffer chunk: %+v\n", c)
+		}
+
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -48,38 +74,16 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
 
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.vocafex.yaml)")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		cobra.CheckErr(err)
-
-		// Search config in home directory with name ".vocafex" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".vocafex")
-	}
-
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-	}
+func initPortaudio() {
+	portaudio.Initialize()
 }
