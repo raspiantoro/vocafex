@@ -1,15 +1,14 @@
 package sink
 
 import (
-	"bytes"
+	"context"
 	"fmt"
 )
 
 type audioOutput interface {
-	init() (err error)
 	start() (err error)
 	useDefaultConfig()
-	receive(chunk <-chan bytes.Buffer) error
+	receive(ctx context.Context, chunk <-chan []float32) error
 }
 
 type AudioSink struct {
@@ -39,8 +38,6 @@ func NewAudioSink(outputType AudioOutputType, opts ...Options) (sink *AudioSink,
 		sink.output = output
 	}
 
-	err = sink.output.init()
-
 	return
 }
 
@@ -61,6 +58,6 @@ func (a *AudioSink) Start() error {
 	return a.output.start()
 }
 
-func (a *AudioSink) Receive(chunk chan bytes.Buffer) error {
-	return a.output.receive(chunk)
+func (a *AudioSink) Receive(ctx context.Context, chunk chan []float32) error {
+	return a.output.receive(ctx, chunk)
 }

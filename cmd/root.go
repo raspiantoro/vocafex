@@ -18,9 +18,13 @@ package cmd
 import (
 	"context"
 	"encoding/binary"
+	"fmt"
 	"log"
+	"os"
+	"os/signal"
 
 	"github.com/gordonklaus/portaudio"
+	"github.com/raspiantoro/vocafex/pkg/audio/pipeline"
 	"github.com/raspiantoro/vocafex/pkg/audio/sink"
 	"github.com/raspiantoro/vocafex/pkg/audio/source"
 	"github.com/spf13/cobra"
@@ -43,16 +47,26 @@ with vocafex it will allow you to add soundfx to any sound input in realtime.`,
 		}
 
 		ctx := context.Background()
+		ctx, cancel := context.WithCancel(ctx)
+
+		go func() {
+			sigint := make(chan os.Signal, 1)
+			signal.Notify(sigint, os.Interrupt)
+			<-sigint
+
+			portaudio.Terminate()
+			fmt.Println("Bye, vocafex is exit now!")
+
+			cancel()
+		}()
 
 		sampleRate := 44100
-		seconds := 1
 		order := binary.BigEndian
 
-		buffIn := make([]int32, sampleRate*seconds)
+		buffIn := make([]float32, sampleRate)
 		micConfig := source.MicConfig{
 			NumChannel: 1,
 			SampleRate: float64(sampleRate),
-			FrameSize:  len(buffIn),
 			Order:      order,
 			Buffer:     buffIn,
 		}
@@ -62,29 +76,27 @@ with vocafex it will allow you to add soundfx to any sound input in realtime.`,
 			log.Fatal(err)
 		}
 
-		err = audioSource.Start()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		buffOut := make([]int32, sampleRate*seconds)
+		buffOut := make([]float32, sampleRate)
 		speakerConfig := sink.SpeakerConfig{
 			NumChannel: 1,
 			SampleRate: float64(sampleRate),
-			FrameSize:  len(buffOut),
 			Order:      order,
 			Buffer:     buffOut,
 		}
 
 		audioSink, err := sink.NewAudioSink(sink.AudioOutputTypeSpeaker, sink.WithSpeakerConfig(speakerConfig))
 
-		err = audioSink.Start()
+		audioPipe := pipeline.Pipeline{
+			Source: audioSource,
+			Sink:   audioSink,
+		}
+
+		err = audioPipe.Start(ctx)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		audioSink.Receive(audioSource.Capture(ctx))
-
+		<-ctx.Done()
 	},
 }
 
