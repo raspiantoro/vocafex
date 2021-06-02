@@ -1,18 +1,14 @@
 package source
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-
-	"github.com/raspiantoro/vocafex/pkg/audio/processor"
 )
 
 type audioInput interface {
 	start() error
 	useDefaultConfig()
-	capture(ctx context.Context) (chunk chan bytes.Buffer)
-	RegisterProcessor(processor processor.SoundProcessor) error
+	stream(ctx context.Context, chunk chan<- []float32)
 }
 
 type AudioSource struct {
@@ -61,10 +57,6 @@ func (a *AudioSource) Start() error {
 	return a.input.start()
 }
 
-func (a *AudioSource) Capture(ctx context.Context) (chunk chan bytes.Buffer) {
-	return a.input.capture(ctx)
-}
-
-func (a *AudioSource) RegisterProcessor(processor processor.SoundProcessor) (err error) {
-	return a.input.RegisterProcessor(processor)
+func (a *AudioSource) Stream(ctx context.Context, chunk chan []float32) {
+	a.input.stream(ctx, chunk)
 }

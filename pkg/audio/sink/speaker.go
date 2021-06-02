@@ -37,18 +37,12 @@ func (s *speakerOutput) start() (err error) {
 	p := portaudio.LowLatencyParameters(nil, h.DefaultOutputDevice)
 	p.Output.Channels = s.cfg.NumChannel
 	p.SampleRate = s.cfg.SampleRate
-	// p.FramesPerBuffer = 64
+	// p.FramesPerBuffer = 8
 	sample := 0
 
 	s.stream, err = portaudio.OpenStream(p, func(out []float32) {
-		// fmt.Println(len(s.cfg.Buffer))
 		for i := range out {
-			// 	// fmt.Println(out[i])
-			// 	// if out[i] > 0 {
 			out[i] = s.cfg.Buffer[(sample+i)%len(s.cfg.Buffer)]
-			// 	// }
-
-			// out[i] = s.cfg.Buffer[i]
 		}
 		sample += len(out)
 	})
@@ -67,15 +61,7 @@ func (s *speakerOutput) receive(ctx context.Context, chunk <-chan []float32) (er
 			s.stream.Close()
 			return
 		default:
-			// err = binary.Read(&buff, s.cfg.Order, s.cfg.Buffer)
-			// if err != nil {
-			// 	// log.Println(err)
-			// }
-
-			// fmt.Println(buff)
-
 			s.cfg.Buffer = make([]float32, len(buff))
-
 			s.cfg.Buffer = buff
 			err = s.stream.Write()
 			if err != nil {

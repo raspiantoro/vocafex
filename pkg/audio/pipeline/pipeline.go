@@ -18,17 +18,15 @@ type Pipeline struct {
 }
 
 func (p *Pipeline) Start(ctx context.Context) (err error) {
+	sourceStreamData := make(chan []float32)
+	sinkStreamData := make(chan []float32)
 
-	if p.Processor == nil {
-		p.Processor = new(processor.AudioProcessor)
-		// nofx := new(nofx.NoFx)
-		// p.Processor.Register(nofx)
+	p.Processor = processor.NewAudioProcessor()
+	// nofx := new(nofx.NoFx)
+	// p.Processor.Register(nofx)
 
-		e := echo.NewEcho(time.Second/5, 44100, binary.BigEndian)
-		p.Processor.Register(e)
-	}
-
-	p.Source.RegisterProcessor(p.Processor.GetProcessor())
+	e := echo.NewEcho(time.Second/2, 44100, binary.BigEndian)
+	p.Processor.Register(e.Process)
 
 	err = p.Source.Start()
 	if err != nil {
@@ -40,27 +38,11 @@ func (p *Pipeline) Start(ctx context.Context) (err error) {
 		return
 	}
 
-	dataChan := make(chan []float32)
+	go p.Source.Stream(ctx, sourceStreamData)
 
-	go p.Sink.Receive(ctx, dataChan)
+	go p.Processor.Stream(ctx, sourceStreamData, sinkStreamData)
 
-	go func() {
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			default:
-				// buff := bytes.Buffer{}
-				// err = binary.Read(&buff, binary.BigEndian, p.Processor.GetBuffer())
-				// if err == nil {
-				dataChan <- p.Processor.GetBuffer()
-				// }
-			}
-		}
-
-	}()
-
-	go p.Source.Capture(ctx)
+	go p.Sink.Receive(ctx, sinkStreamData)
 
 	return
 }

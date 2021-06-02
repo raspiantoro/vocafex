@@ -58,6 +58,6 @@ func (a *AudioSink) Start() error {
 	return a.output.start()
 }
 
-func (a *AudioSink) Receive(ctx context.Context, chunk chan []float32) error {
+func (a *AudioSink) Receive(ctx context.Context, chunk <-chan []float32) error {
 	return a.output.receive(ctx, chunk)
 }

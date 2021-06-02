@@ -1,13 +1,11 @@
 package source
 
 import (
-	"bytes"
 	"context"
 	"encoding/binary"
 	"log"
 
 	"github.com/gordonklaus/portaudio"
-	"github.com/raspiantoro/vocafex/pkg/audio/processor"
 )
 
 type MicConfig struct {
@@ -18,9 +16,8 @@ type MicConfig struct {
 }
 
 type micInput struct {
-	cfg       MicConfig
-	stream    *portaudio.Stream
-	processor processor.SoundProcessor
+	cfg      MicConfig
+	streamer *portaudio.Stream
 }
 
 func (m *micInput) useDefaultConfig() {
@@ -32,11 +29,6 @@ func (m *micInput) useDefaultConfig() {
 	m.cfg.Buffer = buffer
 }
 
-func (m *micInput) RegisterProcessor(processor processor.SoundProcessor) (err error) {
-	m.processor = processor
-	return
-}
-
 func (m *micInput) start() (err error) {
 	h, err := portaudio.DefaultHostApi()
 	if err != nil {
@@ -46,59 +38,46 @@ func (m *micInput) start() (err error) {
 	p := portaudio.LowLatencyParameters(h.DefaultInputDevice, nil)
 	p.Input.Channels = m.cfg.NumChannel
 	p.SampleRate = m.cfg.SampleRate
+	// p.FramesPerBuffer = 8
 
-	// p.FramesPerBuffer = 64
-
-	m.stream, err = portaudio.OpenStream(p, m.cfg.Buffer)
+	m.streamer, err = portaudio.OpenStream(p, m.cfg.Buffer)
 	if err != nil {
 		return
 	}
 
-	return m.stream.Start()
+	return m.streamer.Start()
 }
 
-func (m *micInput) capture(ctx context.Context) (chunk chan bytes.Buffer) {
-
-	chunk = make(chan bytes.Buffer)
+func (m *micInput) stream(ctx context.Context, chunk chan<- []float32) {
 
 	go func() {
-	loopCapture:
 		for {
 			select {
 			case <-ctx.Done():
-				m.stream.Close()
-				m.stream.Stop()
-				break loopCapture
+				m.streamer.Close()
+				m.streamer.Stop()
+				return
 			default:
-				_, err := m.readBuffer()
+				buff, err := m.readBuffer()
 				if err != nil {
 					log.Println(err)
 				}
-				// chunk <- buff
+
+				chunk <- buff
 			}
 		}
 
 	}()
-
-	return
 }
 
-func (m *micInput) readBuffer() (buff bytes.Buffer, err error) {
-	buff = bytes.Buffer{}
-	buff.Reset()
+func (m *micInput) readBuffer() (buff []float32, err error) {
 
-	err = m.stream.Read()
+	err = m.streamer.Read()
 	if err != nil {
 		return
 	}
 
-	// data := make(chan []float32)
-	// fmt.Println(m.cfg.Buffer)
-	m.processor.ProcessAudio(m.cfg.Buffer)
-
-	// newBuffer := <-data
-
-	// err = binary.Write(&buff, m.cfg.Order, newBuffer)
+	buff = m.cfg.Buffer
 
 	return
 }
