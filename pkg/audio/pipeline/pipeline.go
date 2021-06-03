@@ -8,7 +8,7 @@ import (
 	"github.com/raspiantoro/vocafex/pkg/audio/processor"
 	"github.com/raspiantoro/vocafex/pkg/audio/sink"
 	"github.com/raspiantoro/vocafex/pkg/audio/source"
-	"github.com/raspiantoro/vocafex/pkg/soundfx/echo"
+	"github.com/raspiantoro/vocafex/pkg/soundfx/chorus"
 )
 
 type Pipeline struct {
@@ -25,8 +25,11 @@ func (p *Pipeline) Start(ctx context.Context) (err error) {
 	// nofx := new(nofx.NoFx)
 	// p.Processor.Register(nofx)
 
-	e := echo.NewEcho(time.Second/2, 44100, binary.BigEndian)
-	p.Processor.Register(e.Process)
+	// e := echo.NewEcho(time.Second/2, 44100, binary.BigEndian)
+	// p.Processor.Register(e.Process)
+
+	c := chorus.NewChorus(time.Second/3, 44100, binary.BigEndian)
+	p.Processor.Register(c.Process)
 
 	err = p.Source.Start()
 	if err != nil {
