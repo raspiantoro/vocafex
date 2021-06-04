@@ -2,13 +2,12 @@ package pipeline
 
 import (
 	"context"
-	"encoding/binary"
 	"time"
 
 	"github.com/raspiantoro/vocafex/pkg/audio/processor"
 	"github.com/raspiantoro/vocafex/pkg/audio/sink"
 	"github.com/raspiantoro/vocafex/pkg/audio/source"
-	"github.com/raspiantoro/vocafex/pkg/soundfx/chorus"
+	"github.com/raspiantoro/vocafex/pkg/soundfx/delay"
 )
 
 type Pipeline struct {
@@ -25,11 +24,11 @@ func (p *Pipeline) Start(ctx context.Context) (err error) {
 	// nofx := new(nofx.NoFx)
 	// p.Processor.Register(nofx)
 
-	// e := echo.NewEcho(time.Second/2, 44100, binary.BigEndian)
-	// p.Processor.Register(e.Process)
+	// c := chorus.NewChorus(time.Second/3, 44100, binary.BigEndian)
+	// p.Processor.Register(c.Process)
 
-	c := chorus.NewChorus(time.Second/3, 44100, binary.BigEndian)
-	p.Processor.Register(c.Process)
+	d := delay.NewDelay(time.Second*2, 10000, 44100, 512)
+	p.Processor.Register(d.Process)
 
 	err = p.Source.Start()
 	if err != nil {

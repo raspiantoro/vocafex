@@ -38,7 +38,7 @@ func (m *micInput) start() (err error) {
 	p := portaudio.LowLatencyParameters(h.DefaultInputDevice, nil)
 	p.Input.Channels = m.cfg.NumChannel
 	p.SampleRate = m.cfg.SampleRate
-	// p.FramesPerBuffer = 8
+	p.FramesPerBuffer = 8
 
 	m.streamer, err = portaudio.OpenStream(p, m.cfg.Buffer)
 	if err != nil {
