@@ -37,7 +37,7 @@ func (s *speakerOutput) start() (err error) {
 	p := portaudio.LowLatencyParameters(nil, h.DefaultOutputDevice)
 	p.Output.Channels = s.cfg.NumChannel
 	p.SampleRate = s.cfg.SampleRate
-	// p.FramesPerBuffer = 8
+	p.FramesPerBuffer = len(s.cfg.Buffer)
 	sample := 0
 
 	s.stream, err = portaudio.OpenStream(p, func(out []float32) {

@@ -27,8 +27,11 @@ func (p *Pipeline) Start(ctx context.Context) (err error) {
 	// c := chorus.NewChorus(time.Second/3, 44100, binary.BigEndian)
 	// p.Processor.Register(c.Process)
 
-	d := delay.NewDelay(time.Second*30, 10000, .5, 44100, 512)
+	d := delay.NewDelay(time.Second*2, 10000, .5, 44100, 512)
 	p.Processor.Register(d.Process)
+
+	d2 := delay.NewDelay(time.Second*5, 10000, .4, 44100, 512)
+	p.Processor.Register(d2.Process)
 
 	err = p.Source.Start()
 	if err != nil {

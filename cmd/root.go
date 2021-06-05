@@ -61,9 +61,10 @@ with vocafex it will allow you to add soundfx to any sound input in realtime.`,
 		}()
 
 		sampleRate := 44100
+		buffSize := 1024
 		order := binary.BigEndian
 
-		buffIn := make([]float32, sampleRate)
+		buffIn := make([]float32, buffSize)
 		micConfig := source.MicConfig{
 			NumChannel: 1,
 			SampleRate: float64(sampleRate),
@@ -76,7 +77,7 @@ with vocafex it will allow you to add soundfx to any sound input in realtime.`,
 			log.Fatal(err)
 		}
 
-		buffOut := make([]float32, sampleRate)
+		buffOut := make([]float32, buffSize)
 		speakerConfig := sink.SpeakerConfig{
 			NumChannel: 1,
 			SampleRate: float64(sampleRate),
