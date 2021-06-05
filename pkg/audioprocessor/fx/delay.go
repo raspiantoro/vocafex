@@ -1,4 +1,4 @@
-package delay
+package fx
 
 import (
 	"time"

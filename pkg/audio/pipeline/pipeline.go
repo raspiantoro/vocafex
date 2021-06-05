@@ -2,12 +2,11 @@ package pipeline
 
 import (
 	"context"
-	"time"
 
 	"github.com/raspiantoro/vocafex/pkg/audio/processor"
 	"github.com/raspiantoro/vocafex/pkg/audio/sink"
 	"github.com/raspiantoro/vocafex/pkg/audio/source"
-	"github.com/raspiantoro/vocafex/pkg/soundfx/delay"
+	"github.com/raspiantoro/vocafex/pkg/audioprocessor/filter"
 )
 
 type Pipeline struct {
@@ -27,11 +26,21 @@ func (p *Pipeline) Start(ctx context.Context) (err error) {
 	// c := chorus.NewChorus(time.Second/3, 44100, binary.BigEndian)
 	// p.Processor.Register(c.Process)
 
-	d := delay.NewDelay(time.Second*2, 10000, .5, 44100, 512)
-	p.Processor.Register(d.Process)
+	// d := fx.NewDelay(time.Second*2, 10000, .7, 44100, 512)
+	// p.Processor.Register(d.Process)
 
-	d2 := delay.NewDelay(time.Second*5, 10000, .4, 44100, 512)
-	p.Processor.Register(d2.Process)
+	// d2 := fx.NewDelay(time.Second*5, 10000, .5, 44100, 512)
+	// p.Processor.Register(d2.Process)
+
+	hfConfig := filter.HighpassFilterConfig{
+		Cutoff:    .6,
+		CutoffMod: .2,
+		Resonance: 6,
+		Gain:      80,
+	}
+
+	hf := filter.NewHighpassFilter(hfConfig)
+	p.Processor.Register(hf.Process)
 
 	err = p.Source.Start()
 	if err != nil {

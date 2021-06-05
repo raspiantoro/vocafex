@@ -1,4 +1,4 @@
-package chorus
+package fx
 
 import (
 	"encoding/binary"
