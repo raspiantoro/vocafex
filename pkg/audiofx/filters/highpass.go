@@ -65,5 +65,5 @@ func (hp *HighpassFilter) calculatedCutoff() float32 {
 }
 
 func (hp *HighpassFilter) calculateFeedback() {
-	hp.feedback = float32(math.Min(float64(hp.resonance+hp.resonance/(1.0-hp.calculatedCutoff())), 1.0))
+	hp.feedback = float32(math.Min(float64(hp.resonance+hp.resonance/(1.0-hp.calculatedCutoff())), 2.0))
 }

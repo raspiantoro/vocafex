@@ -1,4 +1,4 @@
-package fx
+package timebased
 
 import (
 	"time"
