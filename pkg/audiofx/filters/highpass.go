@@ -20,12 +20,10 @@ type HighpassFilter struct {
 	feedback                           float32
 	gain                               float32
 	sample0, sample1, sample2, sample3 float32
-	prevInput                          float32
 }
 
 func NewHighpassFilter(cfg HighpassFilterConfig) *HighpassFilter {
 	return &HighpassFilter{
-		prevInput: 0,
 		gain:      cfg.Gain,
 		cutoff:    cfg.Cutoff,
 		cutoffMod: cfg.CutoffMod,
@@ -51,7 +49,6 @@ func (hp *HighpassFilter) Process(next processor.SoundProcessor) processor.Sound
 			hp.sample3 += cutoff * (hp.sample2 - hp.sample3)
 
 			out[i] = (buffer.In[i] - hp.sample3) * hp.gain
-			hp.prevInput = buffer.In[i]
 		}
 
 		buffer.In = out

@@ -70,3 +70,7 @@ func (c *CircularBuffer) Resize(size int) {
 	c.buffer = newbuffer
 	c.isResizing = false
 }
+
+func (c *CircularBuffer) GetSize() (size int) {
+	return len(c.buffer)
+}

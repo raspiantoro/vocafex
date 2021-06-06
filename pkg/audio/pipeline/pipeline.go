@@ -7,7 +7,7 @@ import (
 	"github.com/raspiantoro/vocafex/pkg/audio/processor"
 	"github.com/raspiantoro/vocafex/pkg/audio/sink"
 	"github.com/raspiantoro/vocafex/pkg/audio/source"
-	"github.com/raspiantoro/vocafex/pkg/audiofx/timebased"
+	"github.com/raspiantoro/vocafex/pkg/audiofx/modulation"
 )
 
 type Pipeline struct {
@@ -24,11 +24,11 @@ func (p *Pipeline) Start(ctx context.Context) (err error) {
 	// nofx := new(nofx.NoFx)
 	// p.Processor.Register(nofx)
 
-	// c := chorus.NewChorus(time.Second/3, 44100, binary.BigEndian)
-	// p.Processor.Register(c.Process)
+	c := modulation.NewChorus(time.Second*5, 10000, .7, 44100, 1024)
+	p.Processor.Register(c.Process)
 
-	d := timebased.NewDelay(time.Second*2, 10000, .2, 44100, 1024)
-	p.Processor.Register(d.Process)
+	// d := timebased.NewDelay(time.Second*2, 10000, .2, 44100, 1024)
+	// p.Processor.Register(d.Process)
 
 	// d2 := timebased.NewDelay(time.Second*5, 15000, .4, 44100, 1024)
 	// p.Processor.Register(d2.Process)
